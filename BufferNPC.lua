@@ -6,7 +6,7 @@ local BUFF_NUM_PHRASES = 19
 local BUFF_NUM_WHISPERS = 14
 local BUFF_MESSAGE_TIMER = 40000
 local BUFF_EMOTE_SPELL = 44940
-local ENABLE_BUFF_EMOTE_SPELL = false
+local ENABLE_BUFF_EMOTE_SPELL = false -- shoots off a firework periodically to grab attention
 
 
 local phrases = {

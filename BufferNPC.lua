@@ -1,25 +1,53 @@
-local NPCID = 400117 
+local NPCID = 400117
 local ANNOUNCE_MODULE = true
 local BUFF_BY_LEVEL = true
 local BUFF_CURE_RES = true
-local BUFF_NUM_PHRASES = 3
-local BUFF_NUM_WHISPERS = 3
-local BUFF_MESSAGE_TIMER = 60000
+local BUFF_NUM_PHRASES = 19
+local BUFF_NUM_WHISPERS = 14
+local BUFF_MESSAGE_TIMER = 40000
 local BUFF_EMOTE_SPELL = 44940
-
+local ENABLE_BUFF_EMOTE_SPELL = false
 
 
 local phrases = {
-    "Stay strong, adventurer!",
-    "Go forth and conquer!",
-    "May these blessings guide you on your journey!"
+    "It's no fluff, you'll be tough, with these buffs!",    
+    "Get empowered, not devoured, in this crucial hour!",    
+    "Strength and might, for the fight, buffs that'll make you feel right!",    
+    "You'll be spry, don't be shy, with these buffs you'll touch the sky!",    
+    "Grab a buff, no need to bluff, you'll be rough and tough enough!",
+	"In this fray, don't delay, buffs to brighten up your day, %s!",
+    "Come get buffed, taste my stuff, the elven females can't get enuff!",
+	"With these charms, flex your arms, no more worries, no more qualms!", 
+    "Be the talk, take a walk, show your prowess, let them gawk!",
+	"Power up, be the champ, with these buffs you'll break the camp!",
+	"Buffs are here, have no fear, you'll be strong from ear to ear!",
+    "Take your fill, prove your skill, let these buffs your courage instill!",
+    "No more stress, you'll impress, with these buffs you're sure to progress!",
+    "Feel the surge, let it merge, with these buffs you'll surely emerge!",
+    "You're no pawn, time to dawn, buffs that make you strong like brawn!",
+    "Rise above, like a dove, with these buffs that fit like a glove!",
+    "Buff your way, seize the day, show the world your strength's at play!",
+    "Be the bane, no more pain, with these buffs your power will gain!",
+    "With great cheer, have no fear, buffs are here, your path is clear!"
 }
 
 
 local whispers = {
-    "You have been blessed, %s!",
-    "May these buffs aid you in battle, %s!",
-    "Best of luck, %s!"
+	"With this boost, cut them loose, show them all your inner moose, %s!",
+	"You'll shine bright, like a light, let your power take its flight, %s!",  
+	"A buff for you, strong and true, in your quest, they'll see you through, %s!",  
+	"These buffs I share, for those who dare, to face the world without despair, %s!",
+	"Go with grace, win the race, let these buffs keep up your pace, %s!",
+	"Fare thee well, give 'em hell, let your victories ring like a bell, %s!",
+	"Forge ahead, show your stead, with these buffs, you'll be well-fed, %s!",
+    "Stride with pride, side by side, let these buffs be your guide, %s!",
+    "Off you go, steal the show, these buffs will help your power grow, %s!",
+    "Now's your chance, take a stance, with these buffs, you'll enhance, %s!",
+    "Buffed and ready, keep it steady, face the world with blade unsteady, %s!",
+    "On your way, don't delay, let these buffs keep foes at bay, %s!",
+    "Stay brave, ride the wave, with these buffs, you're sure to save, %s!",
+    "Set to soar, ready for more, buffs that'll make your power roar, %s!"
+	
 }
 
 local function Replace(str, from, to)
@@ -107,40 +135,73 @@ end
 end
 
 
-    creature:SendUnitWhisper(PickWhisper(PlayerName), 0, player)
+    creature:SendUnitSay(PickWhisper(PlayerName), 0)
     creature:PerformEmote(71) 
     player:GossipComplete()
 end
 
 local function OnGossipHello(event, player, creature)
-    player:GossipMenuAddItem(0, "Buff me!", 1, 1)
+    player:GossipMenuAddItem(0, "|TInterface\\icons\\spell_misc_emotionhappy:43:43:-33|t|cff007d45Buff me!|r", 1, 1)
     player:GossipSendMenu(1, creature)
+end
+
+
+
+local function OnTimerEmote(eventID, delay, pCall, creature) 
+    creature:PerformEmote(71)  
+    if ENABLE_BUFF_EMOTE_SPELL then  
+        creature:CastSpell(creature, BUFF_EMOTE_SPELL, true)
+    end
+    creature:SendUnitSay(PickPhrase(), 0)
+    creature:RegisterEvent(OnTimerEmote, BUFF_MESSAGE_TIMER, 1, creature) 
+end
+
+
+local function OnSpawn(event, creature)
+    creature:RegisterEvent(OnTimerEmote, BUFF_MESSAGE_TIMER, 1, creature) 
+    if BUFF_EMOTE_SPELL ~= 0 then
+        creature:AddAura(BUFF_EMOTE_SPELL, creature)
+    end
+end
+
+
+local function WrappedOnTimerEmote(eventID, delay, pCall)
+    local anyCreature = nil
+    
+    for _, player in ipairs(GetPlayersInWorld()) do
+        anyCreature = player:GetNearestCreature(30, NPCID)
+        if anyCreature then
+            break
+        end
+    end
+
+    if anyCreature then
+        local playersInRange = anyCreature:GetPlayersInRange(100000)
+        for _, player in ipairs(playersInRange) do
+            local creature = player:GetNearestCreature(100000, NPCID)
+            if creature then
+                OnTimerEmote(eventID, delay, pCall, creature)
+            end
+        end
+    end
+end
+
+
+local eventId = CreateLuaEvent(WrappedOnTimerEmote, BUFF_MESSAGE_TIMER, 1)
+if eventId then
+    RegisterCreatureEvent(NPCID, 5, OnSpawn)
 end
 
 local function OnLogin(event, player)
     if ANNOUNCE_MODULE then
         player:SendBroadcastMessage("This server is running the |cff4CFF00BufferNPC |rmodule.")
     end
+    local creature = player:GetNearestCreature(30, NPCID)  
+    if creature then
+        creature:SetEquipmentSlots(27937, 27937, 0)  -- Weapon slots. Change to whatever.
+    end
 end
 
 RegisterPlayerEvent(3, OnLogin)
 RegisterCreatureGossipEvent(NPCID, 1, OnGossipHello)
 RegisterCreatureGossipEvent(NPCID, 2, OnGossipSelect)
-
-local function OnTimerEmote(eventID, delay, pCall, creature)
-    creature:PerformEmote(BUFF_EMOTE_COMMAND)
-    creature:SendUnitSay(PickPhrase(), 0)
-    creature:RegisterEvent(OnTimerEmote, BUFF_MESSAGE_TIMER, 1)
-end
-
-local function OnSpawn(event, creature)
-    creature:RegisterEvent(OnTimerEmote, BUFF_MESSAGE_TIMER, 1)
-    if BUFF_EMOTE_SPELL ~= 0 then
-        creature:AddAura(BUFF_EMOTE_SPELL, creature)
-    end
-end
-
-local eventId = CreateLuaEvent(OnTimerEmote, BUFF_MESSAGE_TIMER, 1)
-if eventId then
-    RegisterCreatureEvent(NPCID, 5, OnSpawn)
-end
